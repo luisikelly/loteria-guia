@@ -1,0 +1,6 @@
+{
+  "name": "Lotería Guía",
+  "description": "Marcador interactivo de Lotería Guía con bolillas 3D, ingreso manual de números y vista en una sola pantalla sin scroll.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

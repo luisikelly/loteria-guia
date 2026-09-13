@@ -1,0 +1,3442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lotería Guía - Marcador de Bolillas</title>
+  <meta name="description" content="Lotería Guía - Marcador interactivo de bolillas en tiempo real con tablero en pantalla completa y control manual." />
+  <link rel="icon" type="image/svg+xml" href="/trebol-guia.svg" />
+
+  <!-- Google Fonts: Fredoka -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       VARIABLES Y RESET GLOBAL
+       ========================================================================== */
+    :root {
+      --font-family: 'Fredoka', cursive, system-ui, sans-serif;
+
+      /* Paleta "Lotería Guía" inspirada en el afiche festivo */
+      --color-b: #38bdf8;
+      --color-b-dark: #0284c7;
+      --color-i: #a855f7;
+      --color-i-dark: #7e22ce;
+      --color-n: #ff2a85;
+      --color-n-dark: #be123c;
+      --color-g: #2dd4bf;
+      --color-g-dark: #0f766e;
+      --color-o: #f59e0b;
+      --color-o-dark: #b45309;
+
+      /* Interfaz y Tema Claro (Salón de Juego Luminoso) */
+      --bg-gradient: radial-gradient(circle at 50% 0%, #fffdf5 0%, #fef3c7 40%, #f1f5f9 100%);
+      --surface-card: #ffffff;
+      --surface-card-subtle: #fffdf5;
+      --border-subtle: #e2d9cc;
+      --text-main: #171343;
+      --text-muted: #64748b;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --row-bg: #f8fafc;
+      --row-border: #e2e8f0;
+
+      /* Sombras y Elevaciones */
+      --shadow-soft: 0 3px 8px rgba(0, 0, 0, 0.05);
+      --shadow-card: 0 6px 16px -3px rgba(0, 0, 0, 0.07), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+      --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+
+    [data-theme="dark"] {
+      /* Tema Oscuro (Noche Festiva Lotería Guía - Idéntico al Afiche) */
+      --bg-gradient: radial-gradient(ellipse at 50% 12%, #2a206b 0%, #161244 55%, #0e0a2d 100%);
+      --surface-card: #1f1952;
+      --surface-card-subtle: #29226b;
+      --border-subtle: #3d348a;
+      --text-main: #f8fafc;
+      --text-muted: #cbd5e1;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --danger: #f87171;
+      --danger-hover: #ef4444;
+      --row-bg: #261f63;
+      --row-border: #3b3187;
+
+      --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.25);
+      --shadow-card: 0 8px 24px -4px rgba(0, 0, 0, 0.45);
+      --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      padding: 8px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ==========================================================================
+       ESTRUCTURA PRINCIPAL (PANTALLA COMPLETA SIN SCROLL)
+       ========================================================================== */
+    .app-container {
+      width: 100%;
+      max-width: 1440px;
+      height: 100%;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    /* Header y Barra Superior Compacta */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface-card);
+      padding: 6px 14px;
+      border-radius: 14px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* Marquesina de Título inspirada en el afiche oficial */
+    .brand-marquee {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #fffdf0;
+      border: 3px solid #f59e0b;
+      border-radius: 12px;
+      padding: 3px 12px 3px 6px;
+      box-shadow: 
+        0 0 0 2px #fffdf0,
+        0 0 0 4px #fbbf24,
+        0 4px 10px rgba(245, 158, 11, 0.35);
+      flex-shrink: 0;
+      user-select: none;
+    }
+
+    [data-theme="dark"] .brand-marquee {
+      background: #fffdf0;
+      box-shadow: 
+        0 0 0 2px #1f1952,
+        0 0 0 4px #fbbf24,
+        0 0 16px rgba(251, 191, 36, 0.6);
+    }
+
+    .brand-logo-ball {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #34d399 0%, #059669 55%, #065f46 100%);
+      box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4), inset 0 2px 3px rgba(255, 255, 255, 0.8), 0 2px 8px rgba(5, 150, 105, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px solid #fbbf24;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .brand-logo-ball:hover {
+      transform: scale(1.08);
+      box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.4), inset 0 2px 3px rgba(255, 255, 255, 0.8), 0 0 12px rgba(251, 191, 36, 0.85);
+    }
+
+    .trebol-logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 50%;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #171343;
+      line-height: 1.05;
+      text-transform: uppercase;
+    }
+
+    .brand-subtitle {
+      font-size: 0.66rem;
+      color: #7c2d12;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .header-divider {
+      width: 1px;
+      height: 22px;
+      background: var(--border-subtle);
+      margin: 0 2px;
+    }
+
+    /* Botones de Estilo Lúdico */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.84rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+      user-select: none;
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+
+    /* Botón Especial LÍNEA (Rosa vibrante con pulsación) */
+    .btn-linea {
+      background: linear-gradient(135deg, #ff2a85 0%, #db2777 100%);
+      color: #ffffff;
+      font-weight: 700;
+      border: 1px solid #ff65a9;
+      box-shadow: 0 0 10px rgba(255, 42, 133, 0.45);
+      animation: pulse-linea 2.5s infinite;
+      padding: 6px 12px;
+    }
+    .btn-linea:hover {
+      background: linear-gradient(135deg, #ff4396 0%, #be185d 100%);
+      box-shadow: 0 0 16px rgba(255, 42, 133, 0.75);
+      transform: translateY(-1px) scale(1.03);
+    }
+
+    /* Botón Especial BINGO (Dorado festivo con pulsación) */
+    .btn-bingo {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+      color: #1c1300;
+      font-weight: 800;
+      border: 1px solid #fde047;
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.55);
+      animation: pulse-bingo 2s infinite;
+      padding: 6px 14px;
+    }
+    .btn-bingo:hover {
+      background: linear-gradient(135deg, #fde047 0%, #fbbf24 50%, #b45309 100%);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.85);
+      transform: translateY(-1px) scale(1.04);
+    }
+
+    @keyframes pulse-linea {
+      0%, 100% { box-shadow: 0 0 8px rgba(255, 42, 133, 0.4); }
+      50% { box-shadow: 0 0 18px rgba(255, 42, 133, 0.7); }
+    }
+
+    @keyframes pulse-bingo {
+      0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+      50% { box-shadow: 0 0 22px rgba(245, 158, 11, 0.8); }
+    }
+
+    .btn-accent {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+    }
+
+    .btn-accent:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    [data-theme="dark"] .btn-secondary {
+      background: #272064;
+      color: #f8fafc;
+      border-color: #43398c;
+    }
+    [data-theme="dark"] .btn-secondary:hover {
+      background: #342b82;
+      border-color: #5c4eb5;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    .btn-danger:hover {
+      background: #fecaca;
+      color: #991b1b;
+    }
+
+    [data-theme="dark"] .btn-danger {
+      background: #451a24;
+      color: #fca5a5;
+      border-color: #7f1d1d;
+    }
+
+    [data-theme="dark"] .btn-danger:hover {
+      background: #5c1e2e;
+    }
+
+    .btn-icon {
+      padding: 6px 9px;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .btn-fullscreen {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+    }
+
+    .btn-fullscreen.active-fullscreen {
+      background: #10b981;
+      color: #ffffff;
+      border-color: #059669;
+    }
+
+    [data-theme="dark"] .btn-fullscreen.active-fullscreen {
+      background: #059669;
+      color: #ffffff;
+      border-color: #34d399;
+    }
+
+    @media (max-width: 920px) {
+      .fullscreen-label-text {
+        display: none;
+      }
+    }
+
+    /* Adaptación cuando el navegador entra en Pantalla Completa nativa */
+    :fullscreen body,
+    :-webkit-full-screen body {
+      padding: 6px 12px;
+    }
+
+    :fullscreen .app-container,
+    :-webkit-full-screen .app-container {
+      max-width: 100%;
+      height: 100vh;
+    }
+
+    /* ==========================================================================
+       ESPACIO DE TRABAJO PRINCIPAL:
+       LADO IZQUIERDO (2 CUARTOS DE PANTALLA) + LADO DERECHO (TABLERO EN LO QUE SOBRA)
+       ========================================================================== */
+    .workspace-layout {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    /* Lado Izquierdo: Ocupa ~48% del ancho total (para dos cuartos de pantalla) */
+    .left-stage-panel {
+      width: 48%;
+      max-width: 48%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      height: 100%;
+      min-height: 0;
+      flex-shrink: 0;
+    }
+
+    /* Paneles de Cuartos de Pantalla */
+    .quarter-panel {
+      background: var(--surface-card);
+      border-radius: 16px;
+      padding: 10px 14px;
+      box-shadow: var(--shadow-card);
+      border: 1.5px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+      border-bottom: 1px dashed var(--border-subtle);
+      padding-bottom: 4px;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       CUARTO 1: CARTEL GIGANTE DE LA ÚLTIMA BOLILLA CANTADA (1/4 DE LA PANTALLA)
+       ========================================================================== */
+    .quarter-last-ball {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 2.5px solid var(--current-color, #fbbf24);
+      box-shadow: 
+        0 4px 16px rgba(0, 0, 0, 0.08),
+        0 0 22px rgba(251, 191, 36, 0.28);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    [data-theme="dark"] .quarter-last-ball {
+      background: linear-gradient(135deg, #1f1954 0%, #16123e 100%);
+      border-color: var(--current-color, #fbbf24);
+      box-shadow: 
+        0 6px 22px rgba(0, 0, 0, 0.45),
+        0 0 24px rgba(251, 191, 36, 0.32);
+    }
+
+    .quarter-last-ball.cartelito-flash {
+      animation: cartelitoPulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cartelitoPulse {
+      0% {
+        transform: scale(0.97);
+        box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.8);
+      }
+      50% {
+        transform: scale(1.03);
+        box-shadow: 0 0 32px rgba(251, 191, 36, 0.65);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    .cartelito-badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #b45309;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      text-transform: uppercase;
+    }
+
+    [data-theme="dark"] .cartelito-badge-pill {
+      background: rgba(251, 191, 36, 0.2);
+      border-color: rgba(251, 191, 36, 0.4);
+      color: #fde047;
+    }
+
+    .cartelito-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 8px #10b981;
+      animation: pulseGreen 1.8s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.8); }
+    }
+
+    .cartelito-turn-tag {
+      font-size: 0.76rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      letter-spacing: 0.3px;
+    }
+
+    .last-ball-main-stage {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 14px;
+      flex: 1;
+      min-height: 0;
+      padding: 2px 0;
+    }
+
+    /* Esfera Gigante 3D Colosal (Notable y destacada para verse a gran distancia) */
+    .ball-3d-giant {
+      width: clamp(120px, 11vw, 155px);
+      height: clamp(120px, 11vw, 155px);
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 35% 28%, #ffffff 0%, var(--current-color, #94a3b8) 45%, var(--current-dark, #475569) 100%);
+      box-shadow:
+        inset 0 -12px 22px rgba(0, 0, 0, 0.5),
+        inset 0 4px 14px rgba(255, 255, 255, 0.9),
+        0 12px 26px rgba(0, 0, 0, 0.35);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      flex-shrink: 0;
+    }
+
+    /* Brillo especular superior de la esfera */
+    .ball-3d-giant::before,
+    .ball-3d-medium::before,
+    .board-ball.active::before {
+      content: '';
+      position: absolute;
+      top: 9%;
+      left: 18%;
+      width: 38%;
+      height: 24%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 75%);
+      transform: rotate(-28deg);
+      pointer-events: none;
+    }
+
+    /* Círculo blanco central característico de la bolilla */
+    .giant-badge {
+      width: 70%;
+      height: 70%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 45% 45%, #ffffff 0%, #f8fafc 82%, #e2e8f0 100%);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(255, 255, 255, 0.9);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #0f172a !important;
+      z-index: 2;
+    }
+
+    .giant-letter {
+      font-size: clamp(1.2rem, 1.6vw, 1.75rem);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--current-color, #64748b);
+      text-shadow: none;
+    }
+
+    .giant-number {
+      font-size: clamp(3.3rem, 4.4vw, 4.8rem);
+      font-weight: 900;
+      line-height: 0.82;
+      color: #0f172a !important;
+      letter-spacing: -1.5px;
+    }
+
+    /* Rótulo de información adicional del cartelito */
+    .cartelito-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 3px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .cartelito-info-sub {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .cartelito-full-name {
+      font-size: clamp(1.8rem, 2.3vw, 2.7rem);
+      font-weight: 900;
+      line-height: 1.05;
+      color: var(--text-main);
+      letter-spacing: -0.5px;
+    }
+
+    .cartelito-status-badge {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--surface-card-subtle);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+
+    .btn-draw-huge {
+      margin-top: 5px;
+      padding: 8px 18px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      cursor: pointer;
+    }
+
+    .btn-draw-huge:hover {
+      transform: translateY(-2px) scale(1.02);
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Caja de Ingreso Manual de Bolillas */
+    .manual-input-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--surface-card-subtle);
+      padding: 6px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .manual-input-label {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      white-space: nowrap;
+    }
+
+    .manual-input-form {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .manual-ball-input {
+      width: 76px;
+      height: 38px;
+      border-radius: 10px;
+      border: 2px solid var(--primary);
+      background: #ffffff;
+      font-size: 1.45rem;
+      font-weight: 900;
+      text-align: center;
+      color: var(--primary);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    [data-theme="dark"] .manual-ball-input {
+      background: #15113d;
+      color: #fde047;
+      border-color: #6366f1;
+    }
+
+    .manual-ball-input:focus {
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.25);
+    }
+
+    .manual-ball-input::-webkit-inner-spin-button,
+    .manual-ball-input::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .btn-manual-submit {
+      padding: 7px 14px;
+      font-size: 0.88rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    /* ==========================================================================
+       CUARTO 2: ÚLTIMAS CANTADAS (1/4 DE LA PANTALLA)
+       ========================================================================== */
+    .quarter-recent-history {
+      background: var(--surface-card);
+      border: 1.5px solid var(--border-subtle);
+    }
+
+    .history-title-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      color: var(--text-main);
+      letter-spacing: 0.2px;
+    }
+
+    .history-badge-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--surface-card-subtle);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .history-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      min-height: 0;
+      padding: 4px 0;
+      width: 100%;
+    }
+
+    .history-balls-track {
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      width: 100%;
+      gap: 6px;
+    }
+
+    .history-ball-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .ball-3d-medium {
+      width: clamp(52px, 4.4vw, 66px);
+      height: clamp(52px, 4.4vw, 66px);
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 35% 28%, #ffffff 0%, var(--ball-col, #cbd5e1) 45%, var(--ball-dark, #64748b) 100%);
+      box-shadow:
+        inset 0 -3px 6px rgba(0, 0, 0, 0.4),
+        inset 0 2px 4px rgba(255, 255, 255, 0.75),
+        0 4px 10px rgba(0, 0, 0, 0.2);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .ball-3d-medium:hover {
+      transform: translateY(-2px) scale(1.06);
+    }
+
+    .ball-3d-medium.placeholder {
+      background: #f1f5f9;
+      border: 2px dashed #cbd5e1;
+      box-shadow: none;
+      cursor: default;
+    }
+
+    [data-theme="dark"] .ball-3d-medium.placeholder {
+      background: #241c5a;
+      border-color: #4a3e8f;
+    }
+
+    .ball-3d-medium.placeholder::before {
+      display: none;
+    }
+
+    .ball-3d-medium .badge {
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 45% 45%, #ffffff 0%, #f8fafc 80%, #cbd5e1 100%);
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #0f172a !important;
+      z-index: 1;
+    }
+
+    .ball-3d-medium .badge-letter {
+      font-size: clamp(0.68rem, 0.85vw, 0.85rem);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--ball-col, #64748b);
+    }
+
+    .ball-3d-medium .badge-num {
+      font-size: clamp(1.25rem, 1.6vw, 1.65rem);
+      font-weight: 900;
+      line-height: 1;
+      color: #0f172a !important;
+    }
+
+    .history-index-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 800;
+    }
+
+    /* Barra de Progreso y Estadísticas de Partida */
+    .history-progress-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      background: var(--surface-card-subtle);
+      padding: 6px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .progress-count {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.05;
+    }
+
+    .progress-bar-bg {
+      height: 6px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+      border-radius: 999px;
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+
+    /* Animación de entrada al cantar bolilla */
+    @keyframes ballPopIn {
+      0% {
+        transform: scale(0.6) rotate(-15deg);
+        opacity: 0.5;
+      }
+      70% {
+        transform: scale(1.1) rotate(5deg);
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+      }
+    }
+
+    .animate-pop {
+      animation: ballPopIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ==========================================================================
+       TABLERO DE JUEGO (LADO DERECHO - MÁS COMPACTO EN LO QUE SOBRA)
+       ========================================================================== */
+    .board-container {
+      background: var(--surface-card);
+      border-radius: 16px;
+      padding: 8px 10px;
+      box-shadow: var(--shadow-card);
+      border: 1.5px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .board-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 3px;
+      flex-shrink: 0;
+    }
+
+    .board-title {
+      font-size: 0.92rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+    }
+
+    .board-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .board-rows-wrapper {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 3px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Fila de cada Letra */
+    .letter-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface-card-subtle);
+      padding: 2px 6px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      flex: 1;
+      min-height: 0;
+    }
+
+    [data-theme="dark"] .letter-row {
+      background: rgba(28, 23, 72, 0.7);
+      border-color: #312874;
+    }
+
+    /* Insignia de la Letra y Rango */
+    .letter-badge-col {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 74px;
+      flex-shrink: 0;
+    }
+
+    .letter-pill {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #ffffff;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.18);
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .letter-pill.b-pill { background: var(--color-b); }
+    .letter-pill.i-pill { background: var(--color-i); }
+    .letter-pill.n-pill { background: var(--color-n); }
+    .letter-pill.g-pill { background: var(--color-g); }
+    .letter-pill.o-pill { background: var(--color-o); }
+
+    .letter-info {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+
+    .letter-range-text {
+      font-size: 0.76rem;
+      font-weight: 900;
+      color: var(--text-main);
+    }
+
+    .letter-stats-text {
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* Cuadrícula de Bolillas de la Fila */
+    .balls-grid {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2px;
+      flex: 1;
+      height: 100%;
+      min-width: 0;
+    }
+
+    /* Bolilla del Tablero (Inactiva / Activa) con números en gran tamaño */
+    .board-ball {
+      aspect-ratio: 1 / 1;
+      height: 94%;
+      max-height: 48px;
+      max-width: 48px;
+      flex: 1;
+      min-width: 0;
+      border-radius: 50%;
+      border: 1.5px solid #cbd5e1;
+      background: #ffffff;
+      color: #0f172a;
+      font-size: clamp(0.85rem, 1.25vw, 1.2rem);
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.06);
+      position: relative;
+      padding: 0;
+      letter-spacing: -0.5px;
+    }
+
+    @media (max-width: 960px) {
+      .workspace-layout {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .left-stage-panel {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        flex-shrink: 0;
+      }
+      .quarter-panel {
+        min-height: 250px;
+      }
+      .board-container {
+        width: 100%;
+        min-height: 420px;
+        flex-shrink: 0;
+      }
+    }
+
+    [data-theme="dark"] .board-ball {
+      background: #181344;
+      color: #ffffff;
+      border-color: #3b3282;
+    }
+
+    .board-ball:hover {
+      transform: translateY(-2px) scale(1.08);
+      border-color: #94a3b8;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+      background: #f8fafc;
+      z-index: 5;
+    }
+
+    [data-theme="dark"] .board-ball:hover {
+      background: #231c5f;
+      border-color: #6366f1;
+    }
+
+    .board-ball:active {
+      transform: scale(0.92);
+    }
+
+    /* Bolilla Activa: Esfera 3D con Brillo, Color Personalizado y Número Central Grande */
+    .board-ball.active {
+      border: none;
+      color: #ffffff;
+      background: radial-gradient(circle at 35% 28%, #ffffff 0%, var(--row-color) 45%, var(--row-dark) 100%);
+      box-shadow:
+        inset 0 -4px 8px rgba(0, 0, 0, 0.45),
+        inset 0 2px 5px rgba(255, 255, 255, 0.7),
+        0 4px 10px rgba(0, 0, 0, 0.2);
+      animation: ballPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .board-ball.active .board-ball-badge {
+      width: 76%;
+      height: 76%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 45% 45%, #ffffff 0%, #f8fafc 85%, #e2e8f0 100%);
+      box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #0f172a;
+      font-weight: 900;
+      font-size: 1.05em;
+      z-index: 2;
+    }
+
+    /* Resaltar la última cantada en el tablero */
+    .board-ball.last-called {
+      outline: 3px solid #fbbf24;
+      outline-offset: 1px;
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.7);
+      z-index: 6;
+    }
+
+    /* ==========================================================================
+       MODAL: PANEL DE AJUSTES Y CONFIGURACIÓN
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-window {
+      background: #ffffff;
+      width: 100%;
+      max-width: 580px;
+      border-radius: 24px;
+      box-shadow: var(--shadow-modal);
+      padding: 24px;
+      border: 1px solid var(--border-subtle);
+      transform: scale(0.92) translateY(10px);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-backdrop.open .modal-window {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 14px;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .close-modal-btn {
+      background: #f1f5f9;
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+    }
+
+    .close-modal-btn:hover {
+      background: #e2e8f0;
+      color: var(--text-main);
+    }
+
+    .settings-group {
+      margin-bottom: 24px;
+    }
+
+    .settings-group-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .settings-description {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Control de Cantidad Total */
+    .quantity-control-card {
+      background: var(--surface-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .range-slider {
+      flex: 1;
+      height: 8px;
+      border-radius: 4px;
+      background: #cbd5e1;
+      outline: none;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .number-input-badge {
+      width: 70px;
+      padding: 8px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 12px;
+      border: 2px solid var(--primary);
+      background: #ffffff;
+      color: var(--primary);
+      outline: none;
+    }
+
+    /* Presets Rápidos de Cantidad */
+    .presets-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preset-chip {
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .preset-chip:hover,
+    .preset-chip.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    /* Selectores de Color de las Letras */
+    .colors-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 12px;
+    }
+
+    .color-picker-item {
+      background: var(--surface-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    .color-picker-item:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .color-picker-label {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .color-ball-preview {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      position: relative;
+      background: radial-gradient(circle at 35% 28%, #ffffff 0%, var(--preview-col, #3b82f6) 45%, var(--preview-dark, #1e3a8a) 100%);
+      box-shadow: inset 0 -4px 8px rgba(0,0,0,0.4), inset 0 2px 4px rgba(255,255,255,0.7), 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .color-input-native {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #ffffff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .color-input-native::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    .color-input-native::-webkit-color-swatch {
+      border: none;
+      border-radius: 50%;
+    }
+
+    /* Paletas Temáticas Rápidas */
+    .palettes-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .palette-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .palette-btn:hover {
+      border-color: var(--primary);
+      background: #f8fafc;
+    }
+
+    .palette-dots {
+      display: flex;
+      gap: 3px;
+    }
+
+    .palette-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 16px;
+      margin-top: 20px;
+    }
+
+    /* ==========================================================================
+       MODAL DE CONFIRMACIÓN DE REINICIO
+       ========================================================================== */
+    .confirm-dialog {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .confirm-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #fee2e2;
+      color: #dc2626;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+    }
+
+    /* Toast Flotante */
+    .toast-banner {
+      position: fixed;
+      bottom: 24px;
+      background: #0f172a;
+      color: #ffffff;
+      padding: 12px 24px;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      box-shadow: var(--shadow-modal);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 2000;
+      pointer-events: none;
+    }
+
+    .toast-banner.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* ==========================================================================
+       ADAPTACIONES DARK MODE (AFICHE FESTIVO)
+       ========================================================================== */
+    [data-theme="dark"] .manual-ball-input {
+      background: #191444;
+      border-color: #43398c;
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .board-ball {
+      background: #1b164a;
+      border-color: #3b328a;
+      color: #cbd5e1;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+    [data-theme="dark"] .board-ball:hover {
+      background: #272064;
+      border-color: #6366f1;
+      color: #ffffff;
+    }
+
+    [data-theme="dark"] .modal-window {
+      background: #1c174b;
+      border-color: #43398c;
+      color: #f8fafc;
+    }
+
+    [data-theme="dark"] .quantity-control-card,
+    [data-theme="dark"] .color-picker-item {
+      background: #251e63;
+      border-color: #3f358a;
+    }
+
+    [data-theme="dark"] .preset-chip {
+      background: #2a226d;
+      border-color: #473d99;
+      color: #f1f5f9;
+    }
+
+    [data-theme="dark"] .palette-btn {
+      background: #272064;
+      border-color: #473d99;
+      color: #f1f5f9;
+    }
+
+    [data-theme="dark"] .close-modal-btn {
+      background: #272064;
+      color: #cbd5e1;
+    }
+    [data-theme="dark"] .close-modal-btn:hover {
+      background: #352c84;
+      color: #ffffff;
+    }
+
+    [data-theme="dark"] .ball-3d-medium.placeholder {
+      background: #272064;
+      border-color: #473d99;
+    }
+
+    [data-theme="dark"] .toast-banner {
+      background: #272064;
+      color: #ffffff;
+      border: 1px solid #473d99;
+    }
+
+    /* ==========================================================================
+       CARTEL DEMOSTRATIVO DE ANUNCIO DE LÍNEA Y BINGO CON CONFETI
+       ========================================================================== */
+    .confetti-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1050;
+    }
+
+    .announcement-window {
+      max-width: 420px;
+      width: 90%;
+      z-index: 1060;
+      overflow: hidden;
+      border: 3px solid #fbbf24;
+      box-shadow: 0 0 40px rgba(251, 191, 36, 0.45), var(--shadow-modal);
+      animation: announcementPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      padding: 24px 20px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    .announcement-window.linea {
+      border-color: #ff2a85;
+      box-shadow: 0 0 40px rgba(255, 42, 133, 0.45), var(--shadow-modal);
+    }
+
+    @keyframes announcementPop {
+      0% { transform: scale(0.82) translateY(24px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .announcement-badge-circle {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 35% 30%, #34d399 0%, #059669 60%, #065f46 100%);
+      border: 3px solid #fbbf24;
+      box-shadow: 0 6px 20px rgba(5, 150, 105, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.7);
+      margin-bottom: 12px;
+      animation: bounceBadge 2.2s infinite ease-in-out;
+    }
+
+    .announcement-window.linea .announcement-badge-circle {
+      background: radial-gradient(circle at 35% 30%, #34d399 0%, #059669 60%, #065f46 100%);
+      border-color: #ff2a85;
+      box-shadow: 0 6px 20px rgba(255, 42, 133, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.7);
+    }
+
+    @keyframes bounceBadge {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-7px) scale(1.04); }
+    }
+
+    .announcement-trebol-img {
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      object-fit: contain;
+      filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+    }
+
+    .announcement-badge-mini-tag {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 2px solid #fbbf24;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .announcement-window.linea .announcement-badge-mini-tag {
+      border-color: #ff2a85;
+    }
+
+    .announcement-badge-icon {
+      font-size: 2.85rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+    }
+
+    .announcement-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      margin-bottom: 16px;
+    }
+
+    .announcement-badge-tag {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 12px;
+      border-radius: 20px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .announcement-window.linea .announcement-badge-tag {
+      background: rgba(255, 42, 133, 0.15);
+      color: #ff2a85;
+      border-color: rgba(255, 42, 133, 0.3);
+    }
+
+    [data-theme="dark"] .announcement-badge-tag {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fbbf24;
+      border-color: rgba(251, 191, 36, 0.4);
+    }
+
+    [data-theme="dark"] .announcement-window.linea .announcement-badge-tag {
+      background: rgba(255, 42, 133, 0.25);
+      color: #f472b6;
+      border-color: rgba(244, 114, 182, 0.4);
+    }
+
+    .announcement-main-title {
+      font-size: 1.9rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      line-height: 1.1;
+      color: #b45309;
+      margin: 4px 0 2px 0;
+      text-transform: uppercase;
+    }
+
+    .announcement-window.linea .announcement-main-title {
+      color: #be185d;
+    }
+
+    [data-theme="dark"] .announcement-main-title {
+      color: #fbbf24;
+    }
+
+    [data-theme="dark"] .announcement-window.linea .announcement-main-title {
+      color: #f472b6;
+    }
+
+    .announcement-main-sub {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      max-width: 320px;
+      line-height: 1.35;
+    }
+
+    /* Tarjeta demostrativa de resumen */
+    .announcement-demo-card {
+      width: 100%;
+      background: var(--surface-card-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .demo-card-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .demo-card-divider {
+      width: 1px;
+      height: 44px;
+      background: var(--border-subtle);
+    }
+
+    .demo-card-label {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .demo-card-big {
+      font-size: 1.55rem;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.1;
+    }
+
+    .demo-card-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    #announceLastBall {
+      width: 54px;
+      height: 54px;
+      flex-shrink: 0;
+    }
+    #announceLastBall .badge {
+      width: 72%;
+      height: 72%;
+      color: #0f172a !important;
+    }
+    #announceLastBall .badge-letter {
+      font-size: 0.72rem;
+      font-weight: 900;
+    }
+    #announceLastBall .badge-num {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #0f172a !important;
+    }
+
+    .announcement-action-btn {
+      width: 100%;
+      padding: 12px 18px;
+      font-size: 1.02rem;
+      font-weight: 700;
+      justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: all 0.2s ease;
+    }
+    .announcement-action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- BARRA SUPERIOR / ENCABEZADO -->
+    <header class="app-header">
+      <!-- Input oculto para que el usuario pueda cargar su propia imagen del Trébol Guía si lo desea -->
+      <input type="file" id="trebolUploadInput" accept="image/*" style="display: none;" />
+
+      <!-- Letrero Marquesina estilo Afiche Oficial con Trébol Guía -->
+      <div class="brand-marquee" title="Lotería Guía (Clic en el trébol para personalizar imagen si lo deseas)">
+        <div id="brandLogoBall" class="brand-logo-ball" title="Trébol Guía - Clic para cambiar foto si deseas">
+          <img id="headerTrebolImg" src="/trebol-guia.svg" alt="Trébol Guía" class="trebol-logo-img" />
+        </div>
+        <div>
+          <h1 class="brand-title">LOTERÍA GUÍA</h1>
+          <p class="brand-subtitle">Marcador interactivo de bolillas</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Botón de Anunciar LÍNEA -->
+        <button id="announceLineaBtn" class="btn btn-linea" title="¡Cantar y verificar LÍNEA!">
+          <span>⭐</span>
+          <span>¡LÍNEA!</span>
+        </button>
+
+        <!-- Botón de Anunciar BINGO -->
+        <button id="announceBingoBtn" class="btn btn-bingo" title="¡Cantar y verificar BINGO!">
+          <span>🏆</span>
+          <span>¡BINGO!</span>
+        </button>
+
+        <div class="header-divider"></div>
+
+        <!-- Botón de Modo Oscuro / Claro -->
+        <button id="themeToggleBtn" class="btn btn-secondary btn-theme" title="Alternar Modo Oscuro / Claro" aria-label="Cambiar tema">
+          <span id="themeIcon">🌙</span>
+          <span id="themeLabel">Noche</span>
+        </button>
+
+        <!-- Botón de Pantalla Completa -->
+        <button id="fullscreenToggleBtn" class="btn btn-secondary btn-fullscreen" title="Pantalla Completa (F11)" aria-label="Alternar Pantalla Completa">
+          <span id="fullscreenIcon">⛶</span>
+          <span id="fullscreenLabel" class="fullscreen-label-text">Pantalla Completa</span>
+        </button>
+
+        <!-- Botón de Audio/Voz Sintetizada -->
+        <button id="voiceToggleBtn" class="btn btn-secondary btn-icon" title="Activar/Desactivar Voz de Cantador" aria-label="Locución de números">
+          <span id="voiceIcon">🔊</span>
+        </button>
+
+        <!-- Botón de Ajustes -->
+        <button id="openSettingsBtn" class="btn btn-secondary" title="Configurar cantidad de bolillas y colores">
+          <span>⚙️</span>
+          <span>Ajustes</span>
+        </button>
+
+        <!-- Botón de Reinicio -->
+        <button id="resetGameBtn" class="btn btn-danger" title="Reiniciar toda la partida">
+          <span>🔄</span>
+          <span>Reiniciar</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ESPACIO DE TRABAJO PRINCIPAL: LADO IZQUIERDO (2 CUARTOS) + LADO DERECHO (TABLERO LOTERÍA GUÍA) -->
+    <div class="workspace-layout">
+
+      <!-- LADO IZQUIERDO: OCUPA ~48% DEL ANCHO (DIVIDIDO EN DOS CUARTOS DE PANTALLA) -->
+      <aside class="left-stage-panel" aria-label="Control y estado del sorteo">
+
+        <!-- CUARTO 1: CARTEL GIGANTE DE LA ÚLTIMA BOLILLA CANTADA (1/4 DE LA PANTALLA TOTAL) -->
+        <section id="giantBallCartelito" class="caller-cartelito quarter-panel quarter-last-ball" role="status" aria-live="polite">
+          <div class="panel-header">
+            <span class="cartelito-badge-pill">
+              <span class="cartelito-pulse-dot"></span>
+              <span class="cartelito-badge-text">ÚLTIMA BOLILLA CANTADA</span>
+            </span>
+            <span id="giantTurnBadge" class="cartelito-turn-tag">Turno #0</span>
+          </div>
+
+          <div class="last-ball-main-stage">
+            <!-- Esfera Gigante 3D Colosal -->
+            <div id="giantBall" class="ball-3d-giant">
+              <div class="giant-badge">
+                <span id="giantLetter" class="giant-letter">-</span>
+                <span id="giantNumber" class="giant-number">--</span>
+              </div>
+            </div>
+
+            <!-- Rótulo e Información Ampliada del Cartelito -->
+            <div class="cartelito-info">
+              <span class="cartelito-info-sub">RECIÉN CANTADA</span>
+              <div id="giantFullName" class="cartelito-full-name">--</div>
+              <span id="giantStatusBadge" class="cartelito-status-badge">En espera</span>
+              
+              <!-- Botón Gigante de Azar/Sortear dentro del cartel -->
+              <button id="drawRandomBtn" class="btn btn-accent btn-draw-huge" title="Cantar una bolilla al azar">
+                <span>🎲 Sortear Bolilla</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de Ingreso Manual de Bolillas -->
+          <div class="manual-input-box">
+            <label for="manualBallInput" class="manual-input-label">Ingresar Número:</label>
+            <div class="manual-input-form">
+              <input 
+                type="number" 
+                id="manualBallInput" 
+                class="manual-ball-input" 
+                placeholder="#" 
+                min="1" 
+                max="100" 
+                autocomplete="off"
+                title="Escribe el número de la bolilla y presiona Enter o Cantar"
+              />
+              <button type="button" id="submitManualBallBtn" class="btn btn-primary btn-manual-submit" title="Cantar y marcar número">
+                <span>📢 Cantar Bolilla</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CUARTO 2: ÚLTIMAS BOLILLAS CANTADAS (1/4 DE LA PANTALLA TOTAL) -->
+        <section class="quarter-panel quarter-recent-history" aria-label="Historial de últimas bolillas cantadas">
+          <div class="panel-header">
+            <div class="history-title-group">
+              <span>🕒</span>
+              <span class="history-title-text">ÚLTIMAS CANTADAS</span>
+            </div>
+            <span class="history-badge-tag">Historial Reciente</span>
+          </div>
+
+          <!-- Pista de las Últimas Bolillas en Gran Tamaño -->
+          <div class="history-section">
+            <div id="historyTrack" class="history-balls-track">
+              <!-- Renderizado dinámico de 5 bolillas por JS -->
+            </div>
+          </div>
+
+          <!-- Barra de Progreso y Estadísticas de la Partida -->
+          <div class="history-progress-footer">
+            <div class="progress-header">
+              <span>Bolillas en Juego</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-count" id="progressCountLabel">0 / 75</div>
+            <div class="progress-bar-bg">
+              <div id="progressBarFill" class="progress-bar-fill"></div>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+
+      <!-- LADO DERECHO: BINGO DEL TABLERO DE LOTERÍA GUÍA EN LO QUE SOBRA (~52% DEL ANCHO) -->
+      <main class="board-container compact-board-stage" aria-label="Tablero de números de Lotería Guía">
+        <div class="board-header">
+          <div class="board-title">
+            <span>🎯</span>
+            <span>Tablero Lotería Guía</span>
+          </div>
+          <div class="board-hint">
+            Haz clic en un casillero para marcar o desmarcar
+          </div>
+        </div>
+
+        <!-- Filas de letras B-I-N-G-O generadas dinámicamente -->
+        <div id="boardRows" class="board-rows-wrapper">
+          <!-- Renderizado dinámicamente por JS -->
+        </div>
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ==========================================================================
+       MODAL DE AJUSTES (CANTIDAD DE BOLILLAS Y SELECTORES DE COLOR)
+       ========================================================================== -->
+  <div id="settingsModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="modal-window">
+      
+      <div class="modal-header">
+        <h2 id="settingsModalTitle" class="modal-title">
+          <span>⚙️</span>
+          <span>Ajustes de Juego y Bolillas</span>
+        </h2>
+        <button id="closeSettingsBtn" class="close-modal-btn" aria-label="Cerrar modal">&times;</button>
+      </div>
+
+      <!-- 1. Cantidad Total de Bolillas -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span>🎱</span>
+          <span>Cantidad Total de Bolillas</span>
+        </div>
+        <p class="settings-description">
+          Ajusta entre 1 y 100 bolillas. El tablero se distribuirá equitativamente en los 5 rangos (B-I-N-G-O).
+        </p>
+        
+        <div class="quantity-control-card">
+          <div class="slider-row">
+            <input type="range" id="totalBallsSlider" class="range-slider" min="1" max="100" value="75" />
+            <input type="number" id="totalBallsInput" class="number-input-badge" min="1" max="100" value="75" />
+          </div>
+
+          <div class="presets-row">
+            <button class="preset-chip active" data-count="75">75 (Americano Clásico)</button>
+            <button class="preset-chip" data-count="90">90 (Español / Tómbola)</button>
+            <button class="preset-chip" data-count="50">50 (Rápido)</button>
+            <button class="preset-chip" data-count="100">100 (Centenario)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Personalización de Colores de Bolillas 3D -->
+      <div class="settings-group">
+        <div class="settings-group-title">
+          <span>🎨</span>
+          <span>Colores de las Bolillas (Esferas 3D)</span>
+        </div>
+        <p class="settings-description">
+          Elige un color personalizado para cada rango de letra con el selector interactivo.
+        </p>
+
+        <div class="colors-picker-grid">
+          <!-- B -->
+          <div class="color-picker-item">
+            <span class="color-picker-label">B</span>
+            <div id="previewBallB" class="color-ball-preview"></div>
+            <input type="color" id="colorPickerB" class="color-input-native" value="#2563eb" title="Color para rango B" />
+          </div>
+
+          <!-- I -->
+          <div class="color-picker-item">
+            <span class="color-picker-label">I</span>
+            <div id="previewBallI" class="color-ball-preview"></div>
+            <input type="color" id="colorPickerI" class="color-input-native" value="#dc2626" title="Color para rango I" />
+          </div>
+
+          <!-- N -->
+          <div class="color-picker-item">
+            <span class="color-picker-label">N</span>
+            <div id="previewBallN" class="color-ball-preview"></div>
+            <input type="color" id="colorPickerN" class="color-input-native" value="#ea580c" title="Color para rango N" />
+          </div>
+
+          <!-- G -->
+          <div class="color-picker-item">
+            <span class="color-picker-label">G</span>
+            <div id="previewBallG" class="color-ball-preview"></div>
+            <input type="color" id="colorPickerG" class="color-input-native" value="#16a34a" title="Color para rango G" />
+          </div>
+
+          <!-- O -->
+          <div class="color-picker-item">
+            <span class="color-picker-label">O</span>
+            <div id="previewBallO" class="color-ball-preview"></div>
+            <input type="color" id="colorPickerO" class="color-input-native" value="#9333ea" title="Color para rango O" />
+          </div>
+        </div>
+
+        <!-- Paletas Predeterminadas -->
+        <div style="margin-top: 16px;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">Paletas Rápidas:</span>
+          <div class="palettes-row">
+            <button class="palette-btn" data-palette="guia">
+              <div class="palette-dots">
+                <span class="palette-dot" style="background:#38bdf8"></span>
+                <span class="palette-dot" style="background:#a855f7"></span>
+                <span class="palette-dot" style="background:#ff2a85"></span>
+                <span class="palette-dot" style="background:#2dd4bf"></span>
+                <span class="palette-dot" style="background:#f59e0b"></span>
+              </div>
+              <span>Lotería Guía (Afiche)</span>
+            </button>
+
+            <button class="palette-btn" data-palette="classic">
+              <div class="palette-dots">
+                <span class="palette-dot" style="background:#2563eb"></span>
+                <span class="palette-dot" style="background:#dc2626"></span>
+                <span class="palette-dot" style="background:#ea580c"></span>
+                <span class="palette-dot" style="background:#16a34a"></span>
+                <span class="palette-dot" style="background:#9333ea"></span>
+              </div>
+              <span>Clásica</span>
+            </button>
+
+            <button class="palette-btn" data-palette="pastel">
+              <div class="palette-dots">
+                <span class="palette-dot" style="background:#06b6d4"></span>
+                <span class="palette-dot" style="background:#f43f5e"></span>
+                <span class="palette-dot" style="background:#f59e0b"></span>
+                <span class="palette-dot" style="background:#84cc16"></span>
+                <span class="palette-dot" style="background:#a855f7"></span>
+              </div>
+              <span>Pastel Party</span>
+            </button>
+
+            <button class="palette-btn" data-palette="ocean">
+              <div class="palette-dots">
+                <span class="palette-dot" style="background:#0284c7"></span>
+                <span class="palette-dot" style="background:#0d9488"></span>
+                <span class="palette-dot" style="background:#059669"></span>
+                <span class="palette-dot" style="background:#10b981"></span>
+                <span class="palette-dot" style="background:#6366f1"></span>
+              </div>
+              <span>Océano</span>
+            </button>
+
+            <button class="palette-btn" data-palette="sunset">
+              <div class="palette-dots">
+                <span class="palette-dot" style="background:#e11d48"></span>
+                <span class="palette-dot" style="background:#ea580c"></span>
+                <span class="palette-dot" style="background:#d97706"></span>
+                <span class="palette-dot" style="background:#ca8a04"></span>
+                <span class="palette-dot" style="background:#9333ea"></span>
+              </div>
+              <span>Sunset</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="applySettingsBtn" class="btn btn-primary" style="width: 100%;">
+          Guardar y Aplicar Cambios
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       MODAL DE CONFIRMACIÓN DE REINICIO
+       ========================================================================== -->
+  <div id="confirmModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal-window" style="max-width: 420px;">
+      <div class="confirm-dialog">
+        <div class="confirm-icon">⚠️</div>
+        <h3 style="font-size: 1.3rem; font-weight: 700;">¿Reiniciar partida?</h3>
+        <p style="color: var(--text-muted); font-size: 0.95rem;">
+          Se desmarcarán todas las bolillas cantadas y se reiniciará el historial del juego.
+        </p>
+        <div style="display: flex; gap: 10px; width: 100%; margin-top: 8px;">
+          <button id="cancelResetBtn" class="btn btn-secondary" style="flex: 1;">Cancelar</button>
+          <button id="confirmResetBtn" class="btn btn-danger" style="flex: 1;">Sí, Reiniciar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Flotante para notificaciones -->
+  <div id="toastBanner" class="toast-banner">
+    <span id="toastIcon">✨</span>
+    <span id="toastMessage">Notificación</span>
+  </div>
+
+  <!-- ==========================================================================
+       CARTEL DEMOSTRATIVO DE ANUNCIO DE LÍNEA Y BINGO
+       ========================================================================== -->
+  <div id="announcementModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <!-- Canvas transparente para confeti de celebración -->
+    <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+    <div id="announcementWindow" class="modal-window announcement-window">
+      <!-- Botón de cierre en la esquina -->
+      <button id="closeAnnouncementBtn" class="close-modal-btn" aria-label="Cerrar cartel">✕</button>
+
+      <!-- Emblema Festivo Demostrativo con Trébol Guía -->
+      <div id="announcementIconBadge" class="announcement-badge-circle" title="Trébol Guía">
+        <img id="announcementTrebolImg" src="/trebol-guia.svg" alt="Trébol Guía" class="announcement-trebol-img" />
+        <span id="announcementIcon" class="announcement-badge-mini-tag">🏆</span>
+      </div>
+
+      <!-- Texto Principal Demostrativo -->
+      <div class="announcement-content">
+        <span id="announcementTag" class="announcement-badge-tag">🍀 LOTERÍA GUÍA • ¡AVISO EN LA SALA!</span>
+        <h2 id="announcementTitle" class="announcement-main-title">¡CANTARON BINGO!</h2>
+        <p id="announcementSubtitle" class="announcement-main-sub">Pausa en la partida para revisar el cartón del jugador</p>
+      </div>
+
+      <!-- Resumen Demostrativo de la Jugada -->
+      <div class="announcement-demo-card">
+        <div class="demo-card-item">
+          <span class="demo-card-label">ÚLTIMA BOLILLA</span>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 3px;">
+            <div id="announceLastBall" class="ball-3d-medium">
+              <div class="badge">
+                <span id="announceLastLetter" class="badge-letter">-</span>
+                <span id="announceLastNum" class="badge-num">--</span>
+              </div>
+            </div>
+            <div style="text-align: left;">
+              <span id="announceLastFullName" style="font-weight: 800; font-size: 1.05rem; color: var(--text-main); display: block;">-</span>
+              <span id="announceTurnNum" style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Turno: -</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-card-divider"></div>
+
+        <div class="demo-card-item">
+          <span class="demo-card-label">BOLILLAS CANTADAS</span>
+          <span id="announceCount" class="demo-card-big">0 / 75</span>
+          <span id="announcePercent" class="demo-card-sub">0% del total</span>
+        </div>
+      </div>
+
+      <!-- Botón para continuar la partida -->
+      <button id="resumeGameBtn" class="btn btn-primary announcement-action-btn">
+        <span>▶️ Continuar Jugando</span>
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       LÓGICA JAVASCRIPT EMBEBIDA
+       ========================================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      // --------------------------------------------------------------------------
+      // ESTADO DE LA APLICACIÓN
+      // --------------------------------------------------------------------------
+      const LETTERS = ['B', 'I', 'N', 'G', 'O'];
+
+      const DEFAULT_PALETTES = {
+        guia:    { B: '#38bdf8', I: '#a855f7', N: '#ff2a85', G: '#2dd4bf', O: '#f59e0b' },
+        classic: { B: '#2563eb', I: '#dc2626', N: '#ea580c', G: '#16a34a', O: '#9333ea' },
+        pastel:  { B: '#06b6d4', I: '#f43f5e', N: '#f59e0b', G: '#84cc16', O: '#a855f7' },
+        ocean:   { B: '#0284c7', I: '#0d9488', N: '#059669', G: '#10b981', O: '#6366f1' },
+        sunset:  { B: '#e11d48', I: '#ea580c', N: '#d97706', G: '#ca8a04', O: '#9333ea' }
+      };
+
+      const state = {
+        totalBalls: 75,
+        colors: { ...DEFAULT_PALETTES.guia },
+        calledBalls: new Set(), // Números cantados (Set de números enteros)
+        callHistory: [],        // Array de números en orden de extracción (último es callHistory[callHistory.length - 1])
+        voiceEnabled: true,
+        theme: localStorage.getItem('loteria_guia_theme') || 'dark'
+      };
+
+      // --------------------------------------------------------------------------
+      // UTILIDADES DE COLOR (Cálculo dinámico de sombras 3D)
+      // --------------------------------------------------------------------------
+      function hexToRgb(hex) {
+        let cleanHex = hex.replace('#', '');
+        if (cleanHex.length === 3) {
+          cleanHex = cleanHex.split('').map(c => c + c).join('');
+        }
+        const num = parseInt(cleanHex, 16);
+        return {
+          r: (num >> 16) & 255,
+          g: (num >> 8) & 255,
+          b: num & 255
+        };
+      }
+
+      function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => {
+          const hex = Math.max(0, Math.min(255, Math.round(x))).toString(16);
+          return hex.length === 1 ? '0' + hex : hex;
+        }).join('');
+      }
+
+      // Genera una sombra profunda para dar volumen 3D a la esfera
+      function getDarkShade(hexColor, factor = 0.45) {
+        const rgb = hexToRgb(hexColor);
+        return rgbToHex(rgb.r * factor, rgb.g * factor, rgb.b * factor);
+      }
+
+      // --------------------------------------------------------------------------
+      // DISTRIBUCIÓN DE RANGOS B-I-N-G-O
+      // --------------------------------------------------------------------------
+      function calculateLetterRanges(total) {
+        const ranges = [];
+        const baseSize = Math.floor(total / 5);
+        const remainder = total % 5;
+
+        let currentStart = 1;
+        for (let i = 0; i < 5; i++) {
+          const count = baseSize + (i < remainder ? 1 : 0);
+          const end = currentStart + count - 1;
+          ranges.push({
+            letter: LETTERS[i],
+            start: currentStart,
+            end: end,
+            count: count
+          });
+          currentStart = end + 1;
+        }
+        return ranges;
+      }
+
+      function getLetterForNumber(num) {
+        const ranges = calculateLetterRanges(state.totalBalls);
+        for (const range of ranges) {
+          if (num >= range.start && num <= range.end) {
+            return range.letter;
+          }
+        }
+        return 'O';
+      }
+
+      // --------------------------------------------------------------------------
+      // EFECTOS DE AUDIO Y SÍNTESIS DE VOZ
+      // --------------------------------------------------------------------------
+      const AudioController = {
+        ctx: null,
+
+        initContext() {
+          if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioCtx();
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        },
+
+        // Sonido de clic/pop acústico realista de bolilla de bingo
+        playBallPop() {
+          try {
+            this.initContext();
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(450, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(now);
+            osc.stop(now + 0.13);
+          } catch (e) {}
+        },
+
+        // Fanfarria festiva de LÍNEA
+        playFanfareLinea() {
+          try {
+            this.initContext();
+            if (!this.ctx) return;
+            const notes = [440, 554.37, 659.25, 880, 1108.73];
+            notes.forEach((freq, idx) => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              const start = this.ctx.currentTime + idx * 0.09;
+              osc.type = 'triangle';
+              osc.frequency.setValueAtTime(freq, start);
+              gain.gain.setValueAtTime(0.25, start);
+              gain.gain.exponentialRampToValueAtTime(0.001, start + 0.45);
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(start);
+              osc.stop(start + 0.5);
+            });
+          } catch (e) {}
+        },
+
+        // Fanfarria triunfal de BINGO con acordes mayores enérgicos
+        playFanfareBingo() {
+          try {
+            this.initContext();
+            if (!this.ctx) return;
+            const chords = [
+              { freqs: [523.25, 659.25, 783.99], time: 0, dur: 0.22, vol: 0.18 },
+              { freqs: [587.33, 739.99, 880.00], time: 0.24, dur: 0.22, vol: 0.19 },
+              { freqs: [659.25, 830.61, 987.77], time: 0.48, dur: 0.26, vol: 0.2 },
+              { freqs: [1046.50, 1318.51, 1567.98], time: 0.76, dur: 0.85, vol: 0.26 }
+            ];
+
+            const baseTime = this.ctx.currentTime;
+            chords.forEach(ch => {
+              ch.freqs.forEach(f => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                const startTime = baseTime + ch.time;
+                osc.frequency.setValueAtTime(f, startTime);
+                gain.gain.setValueAtTime(ch.vol, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + ch.dur);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + ch.dur + 0.05);
+              });
+            });
+          } catch (e) {}
+        },
+
+        // Sonido de verificación de número (acierto o fallo)
+        playVerifyResult(success) {
+          try {
+            this.initContext();
+            if (!this.ctx) return;
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            if (success) {
+              osc.frequency.setValueAtTime(587.33, now);
+              osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
+              gain.gain.setValueAtTime(0.22, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+            } else {
+              osc.type = 'sawtooth';
+              osc.frequency.setValueAtTime(320, now);
+              osc.frequency.linearRampToValueAtTime(180, now + 0.2);
+              gain.gain.setValueAtTime(0.2, now);
+              gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+            }
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.28);
+          } catch (e) {}
+        },
+
+        // Sonido festivo al cantar o validar premio
+        playChime() {
+          try {
+            this.initContext();
+            if (!this.ctx) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, idx) => {
+              const osc = this.ctx.createOscillator();
+              const gain = this.ctx.createGain();
+              const start = this.ctx.currentTime + idx * 0.07;
+              osc.frequency.setValueAtTime(freq, start);
+              gain.gain.setValueAtTime(0.18, start);
+              gain.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+              osc.connect(gain);
+              gain.connect(this.ctx.destination);
+              osc.start(start);
+              osc.stop(start + 0.4);
+            });
+          } catch (e) {}
+        },
+
+        // Locución hablada del número (Web Speech API)
+        speakBall(letter, num) {
+          if (!state.voiceEnabled || !('speechSynthesis' in window)) return;
+          window.speechSynthesis.cancel();
+          const text = `${letter}, ${num}`;
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'es-ES';
+          utterance.rate = 1.0;
+          utterance.pitch = 1.1;
+
+          const voices = window.speechSynthesis.getVoices();
+          const esVoice = voices.find(v => v.lang.startsWith('es'));
+          if (esVoice) utterance.voice = esVoice;
+
+          window.speechSynthesis.speak(utterance);
+        },
+
+        // Locución especial para anunciar Línea o Bingo
+        speakAnnouncement(type) {
+          if (!state.voiceEnabled || !('speechSynthesis' in window)) return;
+          window.speechSynthesis.cancel();
+          const text = type === 'linea'
+            ? '¡Atención a toda la sala! ¡Han cantado Línea! Procedemos a verificar el cartón.'
+            : '¡Atención a todos! ¡Han cantado BINGO! ¡Muchísimas felicitaciones! Verificando cartón ganador.';
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'es-ES';
+          utterance.rate = 1.05;
+          utterance.pitch = 1.15;
+
+          const voices = window.speechSynthesis.getVoices();
+          const esVoice = voices.find(v => v.lang.startsWith('es'));
+          if (esVoice) utterance.voice = esVoice;
+
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      // --------------------------------------------------------------------------
+      // SISTEMA DE CONFETI CELEBRATORIO (CANVAS)
+      // --------------------------------------------------------------------------
+      const Confetti = {
+        particles: [],
+        animId: null,
+        canvas: null,
+        ctx: null,
+
+        init() {
+          this.canvas = document.getElementById('confettiCanvas');
+          if (!this.canvas) return;
+          this.ctx = this.canvas.getContext('2d');
+          this.resize();
+          window.addEventListener('resize', () => this.resize());
+        },
+
+        resize() {
+          if (!this.canvas) return;
+          this.canvas.width = window.innerWidth;
+          this.canvas.height = window.innerHeight;
+        },
+
+        start() {
+          if (!this.canvas || !this.ctx) this.init();
+          this.resize();
+          this.particles = [];
+          const colors = ['#fbbf24', '#ff2a85', '#38bdf8', '#a855f7', '#2dd4bf', '#f59e0b', '#10b981', '#ffffff'];
+          const count = 90;
+          for (let i = 0; i < count; i++) {
+            this.particles.push({
+              x: Math.random() * this.canvas.width,
+              y: -20 - Math.random() * 120,
+              size: 6 + Math.random() * 8,
+              color: colors[Math.floor(Math.random() * colors.length)],
+              speedY: 2.5 + Math.random() * 4.5,
+              speedX: (Math.random() - 0.5) * 4,
+              rotation: Math.random() * 360,
+              rotationSpeed: (Math.random() - 0.5) * 8,
+              opacity: 1
+            });
+          }
+
+          if (this.animId) cancelAnimationFrame(this.animId);
+          this.loop();
+        },
+
+        loop() {
+          if (!this.ctx || !this.canvas) return;
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+          let activeCount = 0;
+          this.particles.forEach(p => {
+            p.y += p.speedY;
+            p.x += p.speedX;
+            p.rotation += p.rotationSpeed;
+            if (p.y > this.canvas.height - 120) {
+              p.opacity -= 0.025;
+            }
+
+            if (p.opacity > 0 && p.y < this.canvas.height + 20) {
+              activeCount++;
+              this.ctx.save();
+              this.ctx.translate(p.x, p.y);
+              this.ctx.rotate((p.rotation * Math.PI) / 180);
+              this.ctx.globalAlpha = Math.max(0, p.opacity);
+              this.ctx.fillStyle = p.color;
+              this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.65);
+              this.ctx.restore();
+            }
+          });
+
+          if (activeCount > 0) {
+            this.animId = requestAnimationFrame(() => this.loop());
+          } else {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          }
+        },
+
+        stop() {
+          if (this.animId) cancelAnimationFrame(this.animId);
+          if (this.ctx && this.canvas) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          }
+          this.particles = [];
+        }
+      };
+
+      // --------------------------------------------------------------------------
+      // REFERENCIAS AL DOM
+      // --------------------------------------------------------------------------
+      const DOM = {
+        // Tablero y Contenedor
+        boardRows: document.getElementById('boardRows'),
+        // Cartelito y Display Principal de Última Bolilla
+        giantBallCartelito: document.getElementById('giantBallCartelito'),
+        giantBall: document.getElementById('giantBall'),
+        giantLetter: document.getElementById('giantLetter'),
+        giantNumber: document.getElementById('giantNumber'),
+        giantFullName: document.getElementById('giantFullName'),
+        giantTurnBadge: document.getElementById('giantTurnBadge'),
+        giantStatusBadge: document.getElementById('giantStatusBadge'),
+        // Ingreso Manual de Bolillas
+        manualBallInput: document.getElementById('manualBallInput'),
+        submitManualBallBtn: document.getElementById('submitManualBallBtn'),
+        historyTrack: document.getElementById('historyTrack'),
+        progressCountLabel: document.getElementById('progressCountLabel'),
+        progressPercent: document.getElementById('progressPercent'),
+        progressBarFill: document.getElementById('progressBarFill'),
+        // Botones de Cabecera y Modos
+        announceLineaBtn: document.getElementById('announceLineaBtn'),
+        announceBingoBtn: document.getElementById('announceBingoBtn'),
+        themeToggleBtn: document.getElementById('themeToggleBtn'),
+        themeIcon: document.getElementById('themeIcon'),
+        themeLabel: document.getElementById('themeLabel'),
+        fullscreenToggleBtn: document.getElementById('fullscreenToggleBtn'),
+        fullscreenIcon: document.getElementById('fullscreenIcon'),
+        fullscreenLabel: document.getElementById('fullscreenLabel'),
+        drawRandomBtn: document.getElementById('drawRandomBtn'),
+        resetGameBtn: document.getElementById('resetGameBtn'),
+        openSettingsBtn: document.getElementById('openSettingsBtn'),
+        voiceToggleBtn: document.getElementById('voiceToggleBtn'),
+        voiceIcon: document.getElementById('voiceIcon'),
+        // Modal de Ajustes
+        settingsModal: document.getElementById('settingsModal'),
+        closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+        totalBallsSlider: document.getElementById('totalBallsSlider'),
+        totalBallsInput: document.getElementById('totalBallsInput'),
+        applySettingsBtn: document.getElementById('applySettingsBtn'),
+        colorPickers: {
+          B: document.getElementById('colorPickerB'),
+          I: document.getElementById('colorPickerI'),
+          N: document.getElementById('colorPickerN'),
+          G: document.getElementById('colorPickerG'),
+          O: document.getElementById('colorPickerO')
+        },
+        colorPreviews: {
+          B: document.getElementById('previewBallB'),
+          I: document.getElementById('previewBallI'),
+          N: document.getElementById('previewBallN'),
+          G: document.getElementById('previewBallG'),
+          O: document.getElementById('previewBallO')
+        },
+        presetChips: document.querySelectorAll('.preset-chip'),
+        paletteButtons: document.querySelectorAll('.palette-btn'),
+        // Trébol Guía Branding & Carga
+        brandLogoBall: document.getElementById('brandLogoBall'),
+        headerTrebolImg: document.getElementById('headerTrebolImg'),
+        announcementTrebolImg: document.getElementById('announcementTrebolImg'),
+        trebolUploadInput: document.getElementById('trebolUploadInput'),
+        // Modal de Anuncio Demostrativo de Línea / Bingo
+        announcementModal: document.getElementById('announcementModal'),
+        announcementWindow: document.getElementById('announcementWindow'),
+        closeAnnouncementBtn: document.getElementById('closeAnnouncementBtn'),
+        announcementIconBadge: document.getElementById('announcementIconBadge'),
+        announcementIcon: document.getElementById('announcementIcon'),
+        announcementTag: document.getElementById('announcementTag'),
+        announcementTitle: document.getElementById('announcementTitle'),
+        announcementSubtitle: document.getElementById('announcementSubtitle'),
+        announceLastBall: document.getElementById('announceLastBall'),
+        announceLastLetter: document.getElementById('announceLastLetter'),
+        announceLastNum: document.getElementById('announceLastNum'),
+        announceLastFullName: document.getElementById('announceLastFullName'),
+        announceTurnNum: document.getElementById('announceTurnNum'),
+        announceCount: document.getElementById('announceCount'),
+        announcePercent: document.getElementById('announcePercent'),
+        resumeGameBtn: document.getElementById('resumeGameBtn'),
+        // Modal de Confirmación
+        confirmModal: document.getElementById('confirmModal'),
+        confirmResetBtn: document.getElementById('confirmResetBtn'),
+        cancelResetBtn: document.getElementById('cancelResetBtn'),
+        // Toast
+        toastBanner: document.getElementById('toastBanner'),
+        toastMessage: document.getElementById('toastMessage'),
+        toastIcon: document.getElementById('toastIcon')
+      };
+
+      // --------------------------------------------------------------------------
+      // APLICACIÓN DE VARIABLES CSS
+      // --------------------------------------------------------------------------
+      function applyCssColorVariables() {
+        const root = document.documentElement;
+        LETTERS.forEach(letter => {
+          const col = state.colors[letter];
+          const dark = getDarkShade(col);
+          root.style.setProperty(`--color-${letter.toLowerCase()}`, col);
+          root.style.setProperty(`--color-${letter.toLowerCase()}-dark`, dark);
+
+          // Actualizar previsualización en modal de ajustes
+          if (DOM.colorPreviews[letter]) {
+            DOM.colorPreviews[letter].style.setProperty('--preview-col', col);
+            DOM.colorPreviews[letter].style.setProperty('--preview-dark', dark);
+          }
+          if (DOM.colorPickers[letter]) {
+            DOM.colorPickers[letter].value = col;
+          }
+        });
+      }
+
+      // --------------------------------------------------------------------------
+      // RENDERIZADO DEL TABLERO DE NÚMEROS (GRID INTERACTIVO)
+      // --------------------------------------------------------------------------
+      function renderBoard() {
+        DOM.boardRows.innerHTML = '';
+        const ranges = calculateLetterRanges(state.totalBalls);
+        const lastCalledNumber = state.callHistory[state.callHistory.length - 1];
+
+        ranges.forEach(range => {
+          const letter = range.letter;
+          const letterCol = state.colors[letter];
+          const letterDark = getDarkShade(letterCol);
+
+          // Contar cuántas bolillas de este rango han sido cantadas
+          let calledInRange = 0;
+          for (let n = range.start; n <= range.end; n++) {
+            if (state.calledBalls.has(n)) calledInRange++;
+          }
+
+          // Fila del Rango
+          const rowEl = document.createElement('div');
+          rowEl.className = 'letter-row';
+          rowEl.style.setProperty('--row-color', letterCol);
+          rowEl.style.setProperty('--row-dark', letterDark);
+
+          // Columna de la Letra
+          const colInfo = document.createElement('div');
+          colInfo.className = 'letter-badge-col';
+          colInfo.innerHTML = `
+            <div class="letter-pill ${letter.toLowerCase()}-pill">${letter}</div>
+            <div class="letter-info">
+              <span class="letter-range-text">${range.start} - ${range.end}</span>
+              <span class="letter-stats-text">${calledInRange} / ${range.count}</span>
+            </div>
+          `;
+
+          // Grilla de Bolillas
+          const gridEl = document.createElement('div');
+          gridEl.className = 'balls-grid';
+
+          for (let num = range.start; num <= range.end; num++) {
+            const isCalled = state.calledBalls.has(num);
+            const isLast = num === lastCalledNumber;
+
+            const ballBtn = document.createElement('button');
+            ballBtn.className = `board-ball ${isCalled ? 'active' : ''} ${isLast ? 'last-called' : ''}`;
+            ballBtn.setAttribute('data-number', num);
+            ballBtn.setAttribute('title', `Bolilla ${letter}-${num}`);
+            ballBtn.setAttribute('aria-pressed', isCalled ? 'true' : 'false');
+
+            if (isCalled) {
+              ballBtn.innerHTML = `<div class="board-ball-badge">${num}</div>`;
+            } else {
+              ballBtn.textContent = num;
+            }
+
+            // Evento Click para Marcar / Desmarcar
+            ballBtn.addEventListener('click', () => {
+              toggleNumber(num);
+            });
+
+            gridEl.appendChild(ballBtn);
+          }
+
+          rowEl.appendChild(colInfo);
+          rowEl.appendChild(gridEl);
+          DOM.boardRows.appendChild(rowEl);
+        });
+      }
+
+      // --------------------------------------------------------------------------
+      // ACTUALIZACIÓN DEL DISPLAY PRINCIPAL (ÚLTIMO NÚMERO E HISTORIAL)
+      // --------------------------------------------------------------------------
+      function updateDisplay() {
+        const lastCalled = state.callHistory.length > 0 ? state.callHistory[state.callHistory.length - 1] : null;
+
+        // 1. Cartelito Luminoso y Esfera Gigante 3D
+        if (lastCalled !== null) {
+          const letter = getLetterForNumber(lastCalled);
+          const col = state.colors[letter];
+          const dark = getDarkShade(col);
+
+          if (DOM.giantBallCartelito) {
+            DOM.giantBallCartelito.style.setProperty('--current-color', col);
+            DOM.giantBallCartelito.style.setProperty('--current-dark', dark);
+            DOM.giantBallCartelito.classList.remove('cartelito-flash');
+            void DOM.giantBallCartelito.offsetWidth; // Forzar reflow para reanimar
+            DOM.giantBallCartelito.classList.add('cartelito-flash');
+          }
+
+          DOM.giantBall.style.setProperty('--current-color', col);
+          DOM.giantBall.style.setProperty('--current-dark', dark);
+          DOM.giantLetter.textContent = letter;
+          DOM.giantLetter.style.color = col;
+          DOM.giantNumber.textContent = lastCalled;
+
+          if (DOM.giantFullName) {
+            DOM.giantFullName.textContent = `${letter} - ${lastCalled}`;
+            DOM.giantFullName.style.color = col;
+          }
+          if (DOM.giantTurnBadge) {
+            DOM.giantTurnBadge.textContent = `Turno #${state.callHistory.length}`;
+          }
+          if (DOM.giantStatusBadge) {
+            DOM.giantStatusBadge.textContent = '¡En juego!';
+            DOM.giantStatusBadge.style.color = col;
+            DOM.giantStatusBadge.style.borderColor = col;
+          }
+
+          // Animación de impulso de la bolilla
+          DOM.giantBall.classList.remove('animate-pop');
+          void DOM.giantBall.offsetWidth; // Forzar reflow
+          DOM.giantBall.classList.add('animate-pop');
+        } else {
+          if (DOM.giantBallCartelito) {
+            DOM.giantBallCartelito.style.removeProperty('--current-color');
+            DOM.giantBallCartelito.style.removeProperty('--current-dark');
+            DOM.giantBallCartelito.classList.remove('cartelito-flash');
+          }
+          DOM.giantBall.style.removeProperty('--current-color');
+          DOM.giantBall.style.removeProperty('--current-dark');
+          DOM.giantLetter.textContent = '-';
+          DOM.giantLetter.style.color = '#94a3b8';
+          DOM.giantNumber.textContent = '--';
+
+          if (DOM.giantFullName) {
+            DOM.giantFullName.textContent = '--';
+            DOM.giantFullName.style.color = 'var(--text-muted)';
+          }
+          if (DOM.giantTurnBadge) {
+            DOM.giantTurnBadge.textContent = 'Turno #0';
+          }
+          if (DOM.giantStatusBadge) {
+            DOM.giantStatusBadge.textContent = 'En espera';
+            DOM.giantStatusBadge.style.color = 'var(--text-muted)';
+            DOM.giantStatusBadge.style.borderColor = 'var(--border-subtle)';
+          }
+        }
+
+        // 2. Historial Horizontal (Últimas 5 bolillas)
+        renderHistoryTrack();
+
+        // 3. Barra de Progreso y Contadores
+        const total = state.totalBalls;
+        const currentCount = state.calledBalls.size;
+        const percent = total > 0 ? Math.round((currentCount / total) * 100) : 0;
+
+        DOM.progressCountLabel.textContent = `${currentCount} / ${total}`;
+        DOM.progressPercent.textContent = `${percent}%`;
+        DOM.progressBarFill.style.width = `${percent}%`;
+      }
+
+      function renderHistoryTrack() {
+        DOM.historyTrack.innerHTML = '';
+        const historyLen = state.callHistory.length;
+
+        // Tomar hasta las 5 últimas en orden inverso (la más reciente primero)
+        const recent5 = [];
+        for (let i = historyLen - 1; i >= Math.max(0, historyLen - 5); i--) {
+          const diff = historyLen - 1 - i;
+          recent5.push({ 
+            num: state.callHistory[i], 
+            indexLabel: diff === 0 ? 'ÚLTIMA' : `${diff}° ant.` 
+          });
+        }
+
+        // Rellenar hasta 5 slots si hay menos
+        for (let s = 0; s < 5; s++) {
+          const item = recent5[s];
+          const slotEl = document.createElement('div');
+          slotEl.className = 'history-ball-item';
+
+          if (item) {
+            const letter = getLetterForNumber(item.num);
+            const col = state.colors[letter];
+            const dark = getDarkShade(col);
+
+            slotEl.innerHTML = `
+              <div class="ball-3d-medium" style="--ball-col: ${col}; --ball-dark: ${dark};" title="Bolilla ${letter}-${item.num}">
+                <div class="badge">
+                  <span class="badge-letter" style="color: ${col};">${letter}</span>
+                  <span class="badge-num">${item.num}</span>
+                </div>
+              </div>
+              <span class="history-index-label">${item.indexLabel}</span>
+            `;
+
+            // Clic en la bolilla del historial para inspeccionarla o desmarcarla
+            slotEl.querySelector('.ball-3d-medium').addEventListener('click', () => {
+              showToast(`Bolilla ${letter}-${item.num} cantada en turno #${state.callHistory.indexOf(item.num) + 1}`, '🎱');
+            });
+          } else {
+            slotEl.innerHTML = `
+              <div class="ball-3d-medium placeholder">
+                <span style="font-size: 0.9rem; color: #94a3b8; font-weight: 600;">-</span>
+              </div>
+              <span class="history-index-label">espera</span>
+            `;
+          }
+
+          DOM.historyTrack.appendChild(slotEl);
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // ACCIONES DE JUEGO: ACTIVAR / DESACTIVAR NÚMERO
+      // --------------------------------------------------------------------------
+      function toggleNumber(num) {
+        if (num < 1 || num > state.totalBalls) return;
+
+        if (state.calledBalls.has(num)) {
+          // Desactivar número existente
+          state.calledBalls.delete(num);
+          state.callHistory = state.callHistory.filter(n => n !== num);
+          AudioController.playBallPop();
+          showToast(`Bolilla ${num} desmarcada`, '↩️');
+        } else {
+          // Activar nuevo número
+          state.calledBalls.add(num);
+          state.callHistory.push(num);
+          const letter = getLetterForNumber(num);
+          AudioController.playBallPop();
+          AudioController.speakBall(letter, num);
+        }
+
+        renderBoard();
+        updateDisplay();
+      }
+
+      // Cantar una bolilla al azar entre las no extraídas
+      function drawRandomBall() {
+        const uncalled = [];
+        for (let i = 1; i <= state.totalBalls; i++) {
+          if (!state.calledBalls.has(i)) {
+            uncalled.push(i);
+          }
+        }
+
+        if (uncalled.length === 0) {
+          AudioController.playChime();
+          showToast('¡Todas las bolillas ya han sido cantadas!', '🏆');
+          return;
+        }
+
+        // Efecto visual rápido de sorteo
+        DOM.drawRandomBtn.disabled = true;
+        let rolls = 0;
+        const maxRolls = 6;
+        const interval = setInterval(() => {
+          const tempNum = uncalled[Math.floor(Math.random() * uncalled.length)];
+          DOM.giantNumber.textContent = tempNum;
+          rolls++;
+          if (rolls >= maxRolls) {
+            clearInterval(interval);
+            DOM.drawRandomBtn.disabled = false;
+            // Seleccionar ganador definitivo
+            const winner = uncalled[Math.floor(Math.random() * uncalled.length)];
+            toggleNumber(winner);
+          }
+        }, 60);
+      }
+
+      // Reiniciar todo el juego
+      function resetGame() {
+        state.calledBalls.clear();
+        state.callHistory = [];
+        renderBoard();
+        updateDisplay();
+        AudioController.playChime();
+        showToast('Partida reiniciada. ¡Listo para jugar!', '🎉');
+      }
+
+      // --------------------------------------------------------------------------
+      // GESTIÓN DEL MODAL DE AJUSTES
+      // --------------------------------------------------------------------------
+      function openSettings() {
+        DOM.totalBallsSlider.value = state.totalBalls;
+        DOM.totalBallsInput.value = state.totalBalls;
+        syncPresetChipActive(state.totalBalls);
+        applyCssColorVariables();
+        DOM.settingsModal.classList.add('open');
+      }
+
+      function closeSettings() {
+        DOM.settingsModal.classList.remove('open');
+      }
+
+      function syncPresetChipActive(val) {
+        DOM.presetChips.forEach(chip => {
+          if (parseInt(chip.getAttribute('data-count'), 10) === parseInt(val, 10)) {
+            chip.classList.add('active');
+          } else {
+            chip.classList.remove('active');
+          }
+        });
+      }
+
+      function saveAndApplySettings() {
+        const newTotal = parseInt(DOM.totalBallsInput.value, 10);
+        if (isNaN(newTotal) || newTotal < 1 || newTotal > 100) {
+          showToast('La cantidad de bolillas debe ser entre 1 y 100', '⚠️');
+          return;
+        }
+
+        // Guardar Colores
+        LETTERS.forEach(letter => {
+          if (DOM.colorPickers[letter]) {
+            state.colors[letter] = DOM.colorPickers[letter].value;
+          }
+        });
+
+        // Si cambió la cantidad total de bolillas
+        if (newTotal !== state.totalBalls) {
+          state.totalBalls = newTotal;
+          // Filtrar las bolillas cantadas que excedan el nuevo total
+          const validCalled = new Set();
+          state.calledBalls.forEach(n => {
+            if (n <= newTotal) validCalled.add(n);
+          });
+          state.calledBalls = validCalled;
+          state.callHistory = state.callHistory.filter(n => n <= newTotal);
+        }
+
+        applyCssColorVariables();
+        renderBoard();
+        updateDisplay();
+        closeSettings();
+        showToast('Ajustes y colores actualizados correctamente', '✨');
+      }
+
+      // --------------------------------------------------------------------------
+      // MENSAJES TOAST FLOTANTES
+      // --------------------------------------------------------------------------
+      let toastTimer = null;
+      function showToast(msg, icon = '✨') {
+        DOM.toastMessage.textContent = msg;
+        DOM.toastIcon.textContent = icon;
+        DOM.toastBanner.classList.add('show');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          DOM.toastBanner.classList.remove('show');
+        }, 2600);
+      }
+
+      // --------------------------------------------------------------------------
+      // MODO OSCURO / CLARO
+      // --------------------------------------------------------------------------
+      function applyTheme(theme) {
+        state.theme = theme;
+        document.documentElement.setAttribute('data-theme', theme);
+        try {
+          localStorage.setItem('loteria_guia_theme', theme);
+        } catch (e) {}
+
+        if (theme === 'dark') {
+          if (DOM.themeIcon) DOM.themeIcon.textContent = '🌙';
+          if (DOM.themeLabel) DOM.themeLabel.textContent = 'Noche';
+        } else {
+          if (DOM.themeIcon) DOM.themeIcon.textContent = '☀️';
+          if (DOM.themeLabel) DOM.themeLabel.textContent = 'Día';
+        }
+      }
+
+      function toggleTheme() {
+        const newTheme = state.theme === 'dark' ? 'light' : 'dark';
+        applyTheme(newTheme);
+        showToast(newTheme === 'dark' ? 'Modo Noche festivo activado' : 'Modo Día luminoso activado', newTheme === 'dark' ? '🌙' : '☀️');
+      }
+
+      // --------------------------------------------------------------------------
+      // GESTIÓN DE PANTALLA COMPLETA (FULLSCREEN)
+      // --------------------------------------------------------------------------
+      function isFullscreen() {
+        return !!(
+          document.fullscreenElement ||
+          document.webkitFullscreenElement ||
+          document.mozFullScreenElement ||
+          document.msFullscreenElement
+        );
+      }
+
+      async function toggleFullscreen() {
+        try {
+          if (!isFullscreen()) {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+              await elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+              await elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+              await elem.msRequestFullscreen();
+            } else if (elem.mozRequestFullScreen) {
+              await elem.mozRequestFullScreen();
+            }
+            showToast('Pantalla completa activada (Presiona Esc o F11 para salir)', '🖥️');
+          } else {
+            if (document.exitFullscreen) {
+              await document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+              await document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+              await document.msExitFullscreen();
+            } else if (document.mozCancelFullScreen) {
+              await document.mozCancelFullScreen();
+            }
+            showToast('Pantalla completa desactivada', '🗗');
+          }
+        } catch (err) {
+          console.warn('Fullscreen request failed:', err);
+          showToast('Para usar pantalla completa en vista previa, abre la app en una nueva pestaña', 'ℹ️');
+        }
+      }
+
+      function updateFullscreenUI() {
+        const inFs = isFullscreen();
+        if (DOM.fullscreenIcon) {
+          DOM.fullscreenIcon.textContent = inFs ? '🗗' : '⛶';
+        }
+        if (DOM.fullscreenLabel) {
+          DOM.fullscreenLabel.textContent = inFs ? 'Salir' : 'Pantalla Completa';
+        }
+        if (DOM.fullscreenToggleBtn) {
+          DOM.fullscreenToggleBtn.title = inFs
+            ? 'Salir de pantalla completa (Esc o F11)'
+            : 'Pantalla Completa (F11)';
+          DOM.fullscreenToggleBtn.classList.toggle('active-fullscreen', inFs);
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // GESTIÓN DE ANUNCIOS: CARTEL DEMOSTRATIVO DE LÍNEA Y BINGO
+      // --------------------------------------------------------------------------
+      let currentAnnouncementType = 'bingo';
+
+      function openAnnouncementModal(type) {
+        currentAnnouncementType = type;
+        const isBingo = type === 'bingo';
+
+        // Estilos e iconografía según sea Línea o Bingo
+        if (DOM.announcementWindow) {
+          DOM.announcementWindow.className = isBingo
+            ? 'modal-window announcement-window'
+            : 'modal-window announcement-window linea';
+        }
+
+        if (isBingo) {
+          if (DOM.announcementIcon) DOM.announcementIcon.textContent = '🏆';
+          if (DOM.announcementTag) DOM.announcementTag.textContent = '🍀 LOTERÍA GUÍA • ¡BINGO!';
+          if (DOM.announcementTitle) DOM.announcementTitle.textContent = '¡CANTARON BINGO!';
+          if (DOM.announcementSubtitle) DOM.announcementSubtitle.textContent = 'Pausa en la partida para verificar el cartón del jugador';
+          AudioController.playFanfareBingo();
+        } else {
+          if (DOM.announcementIcon) DOM.announcementIcon.textContent = '⭐';
+          if (DOM.announcementTag) DOM.announcementTag.textContent = '🍀 LOTERÍA GUÍA • ¡LÍNEA!';
+          if (DOM.announcementTitle) DOM.announcementTitle.textContent = '¡CANTARON LÍNEA!';
+          if (DOM.announcementSubtitle) DOM.announcementSubtitle.textContent = 'Pausa en la partida para verificar la línea del cartón';
+          AudioController.playFanfareLinea();
+        }
+
+        AudioController.speakAnnouncement(type);
+        Confetti.start();
+
+        // Datos demostrativos de la última bolilla cantada
+        const lastNum = state.callHistory[state.callHistory.length - 1];
+        if (lastNum !== undefined) {
+          const letter = getLetterForNumber(lastNum);
+          const color = state.colors[letter];
+          const dark = getDarkShade(color);
+          if (DOM.announceLastBall) {
+            DOM.announceLastBall.className = 'ball-3d-medium';
+            DOM.announceLastBall.style.background = `radial-gradient(circle at 35% 28%, #ffffff 0%, ${color} 45%, ${dark} 100%)`;
+          }
+          if (DOM.announceLastLetter) DOM.announceLastLetter.textContent = letter;
+          if (DOM.announceLastNum) DOM.announceLastNum.textContent = lastNum;
+          if (DOM.announceLastFullName) DOM.announceLastFullName.textContent = `Bolilla ${letter}-${lastNum}`;
+          if (DOM.announceTurnNum) DOM.announceTurnNum.textContent = `Turno #${state.callHistory.length}`;
+        } else {
+          if (DOM.announceLastBall) {
+            DOM.announceLastBall.className = 'ball-3d-medium placeholder';
+            DOM.announceLastBall.style.background = '';
+          }
+          if (DOM.announceLastLetter) DOM.announceLastLetter.textContent = '-';
+          if (DOM.announceLastNum) DOM.announceLastNum.textContent = '--';
+          if (DOM.announceLastFullName) DOM.announceLastFullName.textContent = 'Sin bolillas';
+          if (DOM.announceTurnNum) DOM.announceTurnNum.textContent = 'En espera';
+        }
+
+        // Conteo y porcentaje demostrativo
+        const total = state.totalBalls;
+        const called = state.calledBalls.size;
+        const pct = Math.round((called / total) * 100);
+        if (DOM.announceCount) DOM.announceCount.textContent = `${called} / ${total}`;
+        if (DOM.announcePercent) DOM.announcePercent.textContent = `${pct}% del total`;
+
+        // Mostrar Cartel Demostrativo
+        DOM.announcementModal.classList.add('open');
+        if (DOM.resumeGameBtn) {
+          DOM.resumeGameBtn.focus();
+        }
+      }
+
+      function closeAnnouncementModal() {
+        DOM.announcementModal.classList.remove('open');
+        Confetti.stop();
+        if (DOM.manualBallInput) {
+          DOM.manualBallInput.focus();
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // EVENT LISTENERS & INICIALIZACIÓN
+      // --------------------------------------------------------------------------
+      function setupEvents() {
+        // Toggle de Modo Oscuro / Claro
+        if (DOM.themeToggleBtn) {
+          DOM.themeToggleBtn.addEventListener('click', toggleTheme);
+        }
+
+        // Toggle de Pantalla Completa
+        if (DOM.fullscreenToggleBtn) {
+          DOM.fullscreenToggleBtn.addEventListener('click', toggleFullscreen);
+        }
+
+        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+          document.addEventListener(evt, updateFullscreenUI);
+        });
+
+        // Botones de Anunciar Línea y Bingo
+        if (DOM.announceLineaBtn) {
+          DOM.announceLineaBtn.addEventListener('click', () => openAnnouncementModal('linea'));
+        }
+        if (DOM.announceBingoBtn) {
+          DOM.announceBingoBtn.addEventListener('click', () => openAnnouncementModal('bingo'));
+        }
+
+        // Botones de cerrar / continuar desde el cartel demostrativo
+        if (DOM.resumeGameBtn) {
+          DOM.resumeGameBtn.addEventListener('click', closeAnnouncementModal);
+        }
+        if (DOM.closeAnnouncementBtn) {
+          DOM.closeAnnouncementBtn.addEventListener('click', closeAnnouncementModal);
+        }
+
+        // Ingreso manual de bolillas cantadas
+        function handleManualBallSubmit() {
+          const rawVal = DOM.manualBallInput.value.trim();
+          if (!rawVal) {
+            DOM.manualBallInput.focus();
+            return;
+          }
+
+          const num = parseInt(rawVal, 10);
+          if (isNaN(num) || num < 1 || num > state.totalBalls) {
+            showToast(`⚠️ Ingresa un número válido entre 1 y ${state.totalBalls}`, '⚠️');
+            DOM.manualBallInput.select();
+            return;
+          }
+
+          const letter = getLetterForNumber(num);
+          if (state.calledBalls.has(num)) {
+            showToast(`ℹ️ La bolilla ${letter}-${num} ya fue cantada previamente`, '🔔');
+            DOM.manualBallInput.value = '';
+            DOM.manualBallInput.focus();
+            return;
+          }
+
+          // Cantar y marcar la bolilla
+          toggleNumber(num);
+          showToast(`Bolilla ${letter}-${num} cantada y registrada`, '🎱');
+          DOM.manualBallInput.value = '';
+          DOM.manualBallInput.focus();
+        }
+
+        DOM.submitManualBallBtn.addEventListener('click', handleManualBallSubmit);
+        DOM.manualBallInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            handleManualBallSubmit();
+          }
+        });
+
+        // Sorteo aleatorio
+        DOM.drawRandomBtn.addEventListener('click', drawRandomBall);
+
+        // Reinicio con modal
+        DOM.resetGameBtn.addEventListener('click', () => {
+          DOM.confirmModal.classList.add('open');
+        });
+
+        DOM.confirmResetBtn.addEventListener('click', () => {
+          DOM.confirmModal.classList.remove('open');
+          resetGame();
+        });
+
+        DOM.cancelResetBtn.addEventListener('click', () => {
+          DOM.confirmModal.classList.remove('open');
+        });
+
+        // Toggle de locución por voz
+        DOM.voiceToggleBtn.addEventListener('click', () => {
+          state.voiceEnabled = !state.voiceEnabled;
+          DOM.voiceIcon.textContent = state.voiceEnabled ? '🔊' : '🔇';
+          DOM.voiceToggleBtn.classList.toggle('btn-primary', state.voiceEnabled);
+          showToast(state.voiceEnabled ? 'Locución activada' : 'Locución silenciada', state.voiceEnabled ? '🔊' : '🔇');
+        });
+
+        // Ajustes
+        DOM.openSettingsBtn.addEventListener('click', openSettings);
+        DOM.closeSettingsBtn.addEventListener('click', closeSettings);
+        DOM.applySettingsBtn.addEventListener('click', saveAndApplySettings);
+
+        // Cerrar modales al hacer clic fuera
+        DOM.settingsModal.addEventListener('click', (e) => {
+          if (e.target === DOM.settingsModal) closeSettings();
+        });
+        DOM.confirmModal.addEventListener('click', (e) => {
+          if (e.target === DOM.confirmModal) DOM.confirmModal.classList.remove('open');
+        });
+        DOM.announcementModal.addEventListener('click', (e) => {
+          if (e.target === DOM.announcementModal) closeAnnouncementModal();
+        });
+
+        // Esc para cerrar modales y F11 para alternar pantalla completa
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') {
+            closeSettings();
+            DOM.confirmModal.classList.remove('open');
+            closeAnnouncementModal();
+          } else if (e.key === 'F11') {
+            e.preventDefault();
+            toggleFullscreen();
+          }
+        });
+
+        // Sincronizar slider y number input de cantidad total
+        DOM.totalBallsSlider.addEventListener('input', (e) => {
+          DOM.totalBallsInput.value = e.target.value;
+          syncPresetChipActive(e.target.value);
+        });
+
+        DOM.totalBallsInput.addEventListener('input', (e) => {
+          let val = parseInt(e.target.value, 10);
+          if (val > 100) val = 100;
+          if (val < 1) val = 1;
+          DOM.totalBallsSlider.value = val;
+          syncPresetChipActive(val);
+        });
+
+        // Chips predeterminados de cantidad (75, 90, 50, 100)
+        DOM.presetChips.forEach(chip => {
+          chip.addEventListener('click', () => {
+            const count = chip.getAttribute('data-count');
+            DOM.totalBallsSlider.value = count;
+            DOM.totalBallsInput.value = count;
+            syncPresetChipActive(count);
+          });
+        });
+
+        // Actualizar preview de color en vivo al cambiar color pickers
+        LETTERS.forEach(letter => {
+          const picker = DOM.colorPickers[letter];
+          const preview = DOM.colorPreviews[letter];
+          if (picker && preview) {
+            picker.addEventListener('input', (e) => {
+              const val = e.target.value;
+              preview.style.setProperty('--preview-col', val);
+              preview.style.setProperty('--preview-dark', getDarkShade(val));
+            });
+          }
+        });
+
+        // Botones de paletas rápidas
+        DOM.paletteButtons.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const paletteKey = btn.getAttribute('data-palette');
+            const pal = DEFAULT_PALETTES[paletteKey];
+            if (pal) {
+              LETTERS.forEach(l => {
+                if (DOM.colorPickers[l]) {
+                  DOM.colorPickers[l].value = pal[l];
+                  DOM.colorPreviews[l].style.setProperty('--preview-col', pal[l]);
+                  DOM.colorPreviews[l].style.setProperty('--preview-dark', getDarkShade(pal[l]));
+                }
+              });
+              showToast(`Paleta ${btn.textContent.trim()} seleccionada`, '🎨');
+            }
+          });
+        });
+      }
+
+      // --------------------------------------------------------------------------
+      // GESTIÓN DEL TRÉBOL GUÍA (IMAGEN CORPORATIVA & CARGA PERSONALIZADA)
+      // --------------------------------------------------------------------------
+      function initTrebolGuia() {
+        const savedCustomTrebol = localStorage.getItem('loteria_guia_trebol_custom');
+        if (savedCustomTrebol) {
+          if (DOM.headerTrebolImg) DOM.headerTrebolImg.src = savedCustomTrebol;
+          if (DOM.announcementTrebolImg) DOM.announcementTrebolImg.src = savedCustomTrebol;
+        }
+
+        if (DOM.brandLogoBall && DOM.trebolUploadInput) {
+          DOM.brandLogoBall.addEventListener('click', () => {
+            DOM.trebolUploadInput.click();
+          });
+
+          DOM.trebolUploadInput.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+              const dataUrl = evt.target.result;
+              if (DOM.headerTrebolImg) DOM.headerTrebolImg.src = dataUrl;
+              if (DOM.announcementTrebolImg) DOM.announcementTrebolImg.src = dataUrl;
+              try {
+                localStorage.setItem('loteria_guia_trebol_custom', dataUrl);
+              } catch (err) {
+                console.warn('Almacenamiento local lleno para imagen', err);
+              }
+              showToast('¡Trébol Guía personalizado cargado con éxito!', '🍀');
+            };
+            reader.readAsDataURL(file);
+          });
+
+          // Soporte para arrastrar y soltar archivo sobre el logo
+          DOM.brandLogoBall.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            DOM.brandLogoBall.style.transform = 'scale(1.2)';
+          });
+          DOM.brandLogoBall.addEventListener('dragleave', () => {
+            DOM.brandLogoBall.style.transform = '';
+          });
+          DOM.brandLogoBall.addEventListener('drop', (e) => {
+            e.preventDefault();
+            DOM.brandLogoBall.style.transform = '';
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+              const file = e.dataTransfer.files[0];
+              const reader = new FileReader();
+              reader.onload = (evt) => {
+                const dataUrl = evt.target.result;
+                if (DOM.headerTrebolImg) DOM.headerTrebolImg.src = dataUrl;
+                if (DOM.announcementTrebolImg) DOM.announcementTrebolImg.src = dataUrl;
+                try {
+                  localStorage.setItem('loteria_guia_trebol_custom', dataUrl);
+                } catch (err) {
+                  console.warn('Almacenamiento local lleno', err);
+                }
+                showToast('¡Trébol Guía actualizado!', '🍀');
+              };
+              reader.readAsDataURL(file);
+            }
+          });
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // ARRANQUE DE LA APLICACIÓN
+      // --------------------------------------------------------------------------
+      function init() {
+        applyTheme(state.theme);
+        applyCssColorVariables();
+        initTrebolGuia();
+        Confetti.init();
+        setupEvents();
+        renderBoard();
+        updateDisplay();
+        if (DOM.manualBallInput) {
+          DOM.manualBallInput.focus();
+        }
+      }
+
+      // Iniciar cuando el DOM esté listo
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+    })();
+  </script>
+</body>
+</html>
